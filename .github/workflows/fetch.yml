@@ -1,0 +1,45 @@
+name: fetch nytårstale
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Kør d. 31/12 kl 18:10 UTC (typisk 19:10 i DK om vinteren)
+    - cron: "10 18 31 12 *"
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: run fetcher
+        run: |
+          python fetch.py
+
+      - name: commit & push (if changes)
+        run: |
+          if git diff --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "add latest nytårstale"
+          git push
