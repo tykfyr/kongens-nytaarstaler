@@ -1,1 +1,1 @@
-# kongens-nytaarstaler
+# Kongens nytårstaler
