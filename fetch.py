@@ -2,13 +2,15 @@
 """
 Fetch latest King's New Year speech from Kongehuset "nytårstaler" page.
 
-Key detail (based on current HTML):
-- The FIRST accordion contains "H.M. Kongens nytårstaler" (no year in title)
-- The years are in the LINKS inside the accordion content (e.g. "Nytårstalen 2025")
-- Links may be absolute (https://www.kongehuset.dk/...) or relative (/nyheder/...)
+Rules:
+- The page contains multiple accordions. We ONLY parse the FIRST accordion (Kongen).
+- Years are derived from the links inside the accordion content (text/title/href).
+- Links can be absolute or relative.
+- Writes taler/<YEAR>.md only if it doesn't already exist.
 
-Output:
-- Writes taler/<YEAR>.md if not already present
+Deps:
+- requests
+- beautifulsoup4
 """
 
 from __future__ import annotations
@@ -49,12 +51,6 @@ def get_first_accordion(soup: BeautifulSoup):
 
 
 def extract_year_from_link(a) -> int | None:
-    """
-    Try to find a year from:
-    - link text: "Nytårstalen 2025"
-    - title attribute
-    - href
-    """
     txt = (a.get_text(" ", strip=True) or "")
     title = (a.get("title") or "")
     href = (a.get("href") or "")
@@ -70,7 +66,6 @@ def find_latest_speech_url(index_html: str) -> tuple[int, str]:
     soup = BeautifulSoup(index_html, "html.parser")
     root = get_first_accordion(soup)
 
-    # Find ALL links in first accordion content
     links = root.select(".accordion__container__item__content a[href]")
     if not links:
         raise RuntimeError("Fandt ingen links i første accordion.")
@@ -85,14 +80,12 @@ def find_latest_speech_url(index_html: str) -> tuple[int, str]:
         if not href:
             continue
 
-        # Normalize to absolute URL
         url = href if href.startswith("http") else urljoin(BASE_URL, href)
         candidates.append((year, url))
 
     if not candidates:
         raise RuntimeError("Fandt ingen årstal i links i første accordion (Kongen).")
 
-    # Pick highest year
     candidates.sort(key=lambda x: x[0], reverse=True)
     return candidates[0]
 
@@ -139,8 +132,8 @@ def main() -> int:
     index_html = get_html(INDEX_URL)
 
     year, speech_url = find_latest_speech_url(index_html)
-
     out_file = Path("taler") / f"{year}.md"
+
     if out_file.exists():
         print(f"OK: {out_file} findes allerede. Ingen ændringer.")
         return 0

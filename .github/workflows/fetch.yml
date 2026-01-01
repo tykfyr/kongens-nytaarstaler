@@ -3,6 +3,7 @@ name: fetch nytårstale
 on:
   workflow_dispatch: {}
   schedule:
+    # Flere forsøg 31/12 (UTC). Scriptet committer kun ved ændringer.
     - cron: "10,25,40,55 18 31 12 *"
     - cron: "10,25,40,55 19 31 12 *"
 
@@ -35,7 +36,15 @@ jobs:
 
       - name: commit & push (if changes)
         run: |
-          if git diff --quiet; then
+          echo "pwd: $(pwd)"
+          ls -la
+          ls -la taler || true
+
+          echo "git status:"
+          git status --porcelain=v1
+
+          # Brug status i stedet for diff (fanger også untracked files)
+          if [ -z "$(git status --porcelain=v1)" ]; then
             echo "No changes."
             exit 0
           fi
