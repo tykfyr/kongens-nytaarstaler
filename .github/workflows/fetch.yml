@@ -3,8 +3,8 @@ name: fetch nytårstale
 on:
   workflow_dispatch: {}
   schedule:
-    # Kør d. 31/12 kl 18:10 UTC (typisk 19:10 i DK om vinteren)
-    - cron: "10 18 31 12 *"
+    - cron: "10,25,40,55 18 31 12 *"
+    - cron: "10,25,40,55 19 31 12 *"
 
 permissions:
   contents: write
@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - name: set up python
         uses: actions/setup-python@v5
